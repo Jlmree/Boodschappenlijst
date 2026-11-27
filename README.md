@@ -1,0 +1,2 @@
+# Boodschappenlijst
+Makelijke gedeelde boodschappenlijst
