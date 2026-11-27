@@ -59,7 +59,7 @@ h1{font:700 clamp(26px,7vw,36px)/1.1 Outfit,sans-serif;margin:0;flex:1;overflow:
 .row.gone{transition:max-height .22s ease .12s,opacity .2s ease .12s;max-height:0!important;opacity:0}
 .row.new{animation:in .25s ease}
 @keyframes in{from{opacity:0;transform:translateY(-4px)}}
-@media(max-width:360px){.ed{width:32px}.step button{width:34px}.step output{min-width:26px}.thumb{width:36px;height:36px}.row{gap:8px}}
+@media(max-width:360px){.ed{width:32px}.qc button{width:36px}.thumb{width:36px;height:36px}.row{gap:8px}}
 @media(prefers-reduced-motion:reduce){.row.new{animation:none}.top{transition:none}}
 .chk{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--lc);display:grid;place-items:center;margin-right:12px}
 .chk svg{width:14px;height:14px;opacity:0}
@@ -73,7 +73,32 @@ h1{font:700 clamp(26px,7vw,36px)/1.1 Outfit,sans-serif;margin:0;flex:1;overflow:
 .ed svg{width:18px;height:18px}
 .nm{font-weight:500;font-size:17px}
 .done .nm{text-decoration:line-through;color:var(--mut)}
-.qty{display:inline-block;margin-left:6px;background:var(--card);border-radius:8px;padding:0 7px;font-size:14px;font-weight:600;white-space:nowrap}
+.qb{display:inline-block;min-width:34px;text-align:center;margin-right:8px;padding:2px 8px;border-radius:9px;background:var(--lc);color:#fff;font:700 15px/1.35 Outfit,Inter,sans-serif;white-space:nowrap;vertical-align:1px}
+.done .qb{background:var(--card);color:var(--mut)}
+.qb.pop{animation:pop .25s ease}@keyframes pop{50%{transform:scale(1.18)}}
+.meta{display:block;font-size:13px;color:var(--mut)}
+.qc{flex:none;display:flex;align-items:center;gap:2px}
+.qc button{width:40px;height:44px;border:0;background:none;padding:0;display:grid;place-items:center;color:var(--mut);border-radius:12px}
+.qc button span{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font:500 20px/1 Inter,sans-serif}
+.qc button:active span{background:var(--card)}
+.qc .pl span{border-color:var(--lc);color:var(--lc)}
+:root .qc .pl span{color:light-dark(var(--lc),#9fe0b9);border-color:light-dark(var(--lc),#9fe0b9)}
+@media(prefers-reduced-motion:reduce){.row.new{animation:none}.top{transition:none}}
+.chk{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--lc);display:grid;place-items:center;margin-right:12px}
+.chk svg{width:14px;height:14px;opacity:0}
+.done .chk{background:var(--lc);border-color:var(--lc)}.done .chk svg{opacity:1}
+.txt{flex:1;overflow-wrap:anywhere;border:0;background:none;text-align:left;padding:8px 0;min-height:52px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;border-radius:10px}
+.txt{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y;transition:background .15s,transform .15s}
+.txt.press{background:var(--card);transform:scale(.98)}
+.hint{font-size:13px;color:var(--mut);text-align:center;margin:22px 0 0}
+.txt>span:last-child{flex:1}
+.ed{flex:none;width:40px;height:44px;border:0;background:none;color:var(--mut);display:grid;place-items:center;padding:0;border-radius:10px}
+.ed svg{width:18px;height:18px}
+.nm{font-weight:500;font-size:17px}
+.done .nm{text-decoration:line-through;color:var(--mut)}
+.qb{display:inline-block;min-width:34px;text-align:center;margin-right:8px;padding:2px 8px;border-radius:9px;background:var(--lc);color:#fff;font:700 15px/1.35 Outfit,Inter,sans-serif;white-space:nowrap;vertical-align:1px}
+.done .qb{background:var(--card);color:var(--mut)}
+.qb.pop{animation:pop .25s ease}@keyframes pop{50%{transform:scale(1.18)}}
 .meta{display:block;font-size:13px;color:var(--mut)}
 .one{flex:none;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--lc);font:600 22px/1 Inter,sans-serif;padding:0;display:grid;place-items:center}
 :root .one{color:light-dark(var(--lc),#9fe0b9)}
@@ -297,7 +322,9 @@ let lastAdded=null;
 function eq(i){const q=String(i.qty||"").trim();const a=i.adds?Object.values(i.adds).reduce((x,y)=>x+(+y||0),0):0;if(!a)return q;const m=q.match(/^(\d+)(.*)$/);if(!m&&q)return q;return String(Math.max(1,(m?+m[1]:1)+a))+(m?m[2]:"")}
 const clean=i=>{const d={...i,qty:eq(i)};delete d.adds;return d};
 const stepable=q=>!q||/^\d+(\s*(x|st|stuks|pak|pakken|zak|zakken|blik|blikken|fles|flessen))?$/i.test(String(q).trim());
-function step(id,d){
+const POP={};
+function qlabel(i){const q=eq(i);if(!q)return "";if(/^\d+$/.test(q))return +q>1?q+"\u00d7":"";return q}
+function step(id,d){POP[id]=Date.now();
   const i=S.items[id];if(!i||!stepable(i.qty))return;const cur=parseInt(eq(i))||1;if(cur+d<1)return;
   write({op:"upd",path:"items/"+id,data:{adds:{[me]:((i.adds&&+i.adds[me])||0)+d}}});
 }
@@ -371,7 +398,7 @@ function row(i){
   const meta=[i.note,i.done?"gehaald door "+who(i.doneBy):(i.by&&mode==="db"&&i.by!==me?"door "+who(i.by):"")].filter(Boolean).map(h).join(" · ");
   if(!firstPaint&&!seen.has(i.id)&&!NEWAT[i.id])NEWAT[i.id]=Date.now();
   const nw=NEWAT[i.id]&&Date.now()-NEWAT[i.id]<1500?" new":"";
-  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'" data-id="'+h(i.id)+'"><span class="delbg" aria-hidden="true">Verwijderen</span><div class="rin"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span><span class="nm">'+h(i.name)+'</span>'+(eq(i)&&(i.done||!stepable(i.qty))?'<span class="qty">'+h(eq(i))+'</span>':'')+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)&&(parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1")?'<button class="one" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button>':'')+(!i.done&&stepable(i.qty)&&!((parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1"))?'<div class="step"><button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'">&minus;</button><output aria-live="polite">'+h(eq(i)||"1")+'</output><button data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div></div>';
+  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'" data-id="'+h(i.id)+'"><span class="delbg" aria-hidden="true">Verwijderen</span><div class="rin"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>'+(qlabel(i)?'<span class="qb'+(POP[i.id]&&Date.now()-POP[i.id]<400?" pop":"")+'">'+h(qlabel(i))+'</span>':'')+'<span class="nm">'+h(i.name)+'</span>'+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)?'<div class="qc">'+((parseInt(eq(i))||1)>1?'<button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'"><span>&minus;</span></button>':'')+'<button class="pl" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'"><span>+</span></button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div></div>';
 }
 function suggest(){
   const v=norm($("#inp").value);const onList=new Set(Object.values(S.items).filter(i=>i.list===cur&&!i.done).map(i=>norm(i.name)));
