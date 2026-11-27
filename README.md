@@ -8,10 +8,11 @@ Makkelijke gedeelde boodschappenlijst voor het hele gezin. Werkt op Android en i
 
 - Meerdere lijsten (bijv. AH, Lidl, Action), elk met eigen kleur en looproute door de winkel
 - Snel toevoegen: `2 melk, brood en kaas` wordt drie artikelen, al ingedeeld per afdeling
-- Tik op een artikel om af te vinken, houd ingedrukt voor details (aantal, notitie, foto, afdeling)
+- Tik op een artikel om af te vinken, houd ingedrukt voor details, veeg naar links om te verwijderen
 - − / + per artikel; tegelijk tikken door meerdere gezinsleden telt netjes op
 - Vaste items, suggesties uit wat je vaak koopt, inspreken met de microfoon
-- "Ik ga boodschappen doen": de rest ziet dat je in de winkel bent
+- "Ik ga winkelen": de rest ziet dat je in de winkel bent; "Klaar met winkelen" ruimt de gehaalde artikelen op
+- Eigen afdelingen toevoegen (bijv. Drogist) en de looproute per winkel instellen
 - Live samen via een gezinslink, je ziet wie iets toevoegde of haalde
 - Offline: wijzigingen wachten en worden verstuurd zodra er weer bereik is
 - Op je beginscherm te zetten als app

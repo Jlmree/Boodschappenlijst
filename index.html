@@ -51,7 +51,12 @@ h1{font:700 clamp(26px,7vw,36px)/1.1 Outfit,sans-serif;margin:0;flex:1;overflow:
 .banner.info{background:var(--card);color:var(--ink)}
 .cat{margin-top:12px}
 .cat h2{font:600 13px/1 Inter,sans-serif;color:var(--mut);margin:0;padding:10px 0 6px;display:flex;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:2}
-.row{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
+.row{position:relative;border-bottom:1px solid var(--line);overflow:hidden}
+.rin{display:flex;align-items:center;gap:6px;padding:8px 0;background:var(--bg);position:relative;touch-action:pan-y}
+.row.swiping .rin{transition:none}.rin{transition:transform .2s ease}
+.delbg{position:absolute;inset:0;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:flex-end;padding-right:20px;font-weight:600;opacity:0}
+.row.swiping .delbg,.row.gone .delbg{opacity:1}
+.row.gone{transition:max-height .22s ease .12s,opacity .2s ease .12s;max-height:0!important;opacity:0}
 .row.new{animation:in .25s ease}
 @keyframes in{from{opacity:0;transform:translateY(-4px)}}
 @media(max-width:360px){.ed{width:32px}.step button{width:34px}.step output{min-width:26px}.thumb{width:36px;height:36px}.row{gap:8px}}
@@ -60,7 +65,7 @@ h1{font:700 clamp(26px,7vw,36px)/1.1 Outfit,sans-serif;margin:0;flex:1;overflow:
 .chk svg{width:14px;height:14px;opacity:0}
 .done .chk{background:var(--lc);border-color:var(--lc)}.done .chk svg{opacity:1}
 .txt{flex:1;overflow-wrap:anywhere;border:0;background:none;text-align:left;padding:8px 0;min-height:52px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;border-radius:10px}
-.txt{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation;transition:background .15s,transform .15s}
+.txt{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:pan-y;transition:background .15s,transform .15s}
 .txt.press{background:var(--card);transform:scale(.98)}
 .hint{font-size:13px;color:var(--mut);text-align:center;margin:22px 0 0}
 .txt>span:last-child{flex:1}
@@ -331,7 +336,7 @@ function morph(a,b){
 function setHTML(el,html){const t=document.createElement(el.tagName);t.innerHTML=html;morph(el,t)}
 const seen=new Set(),NEWAT={};let firstPaint=true,paintedList=null;
 let rq=0;function render(){if(rq)return;rq=requestAnimationFrame(()=>{rq=0;draw()})}
-function draw(){if(paintedList!==cur){firstPaint=true;paintedList=cur}
+function draw(){if(swEl){swRedraw=true;return}if(paintedList!==cur){firstPaint=true;paintedList=cur}
   ensureCur();const l=L();const col=(l&&l.color)||COLORS[0];
   document.documentElement.style.setProperty("--lc",col);
   setHTML($("#tabs"),lists().map(x=>'<button class="tab" data-act="list" data-id="'+h(x.id)+'" aria-current="'+(x.id===cur)+'">'+h(x.name)+'</button>').join("")+'<button class="tab add" data-act="newlist">+ Lijst</button>');
@@ -353,7 +358,7 @@ function draw(){if(paintedList!==cur){firstPaint=true;paintedList=cur}
   const groups={};for(const i of open){(groups[i.cat]=groups[i.cat]||[]).push(i)}
   const cats=[...order.filter(c=>groups[c]),...Object.keys(groups).filter(c=>!order.includes(c))];
   for(const c of cats){const g=groups[c].sort((a,b)=>a.at-b.at);html+='<section class="cat" data-key="c-'+h(c)+'"><h2><span>'+h(c)+'</span><span>'+g.length+'</span></h2>'+g.map(row).join("")+'</section>'}
-  if(open.length||done.length)html+='<p class="hint">Tik om af te vinken · houd ingedrukt voor details</p>';
+  if(open.length||done.length)html+='<p class="hint">Tik om af te vinken · houd ingedrukt voor details · veeg naar links om te verwijderen</p>';
   if(done.length){
     html+='<div class="donehead"><button class="lnk" data-act="showdone">'+(showDone?"Verberg":"Toon")+' in de kar ('+done.length+')</button><button class="lnk" data-act="cleardone">Wis afgevinkt</button></div>';
     if(showDone)html+=done.map(row).join("");
@@ -366,7 +371,7 @@ function row(i){
   const meta=[i.note,i.done?"gehaald door "+who(i.doneBy):(i.by&&mode==="db"&&i.by!==me?"door "+who(i.by):"")].filter(Boolean).map(h).join(" · ");
   if(!firstPaint&&!seen.has(i.id)&&!NEWAT[i.id])NEWAT[i.id]=Date.now();
   const nw=NEWAT[i.id]&&Date.now()-NEWAT[i.id]<1500?" new":"";
-  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span><span class="nm">'+h(i.name)+'</span>'+(eq(i)&&(i.done||!stepable(i.qty))?'<span class="qty">'+h(eq(i))+'</span>':'')+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)&&(parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1")?'<button class="one" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button>':'')+(!i.done&&stepable(i.qty)&&!((parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1"))?'<div class="step"><button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'">&minus;</button><output aria-live="polite">'+h(eq(i)||"1")+'</output><button data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div>';
+  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'" data-id="'+h(i.id)+'"><span class="delbg" aria-hidden="true">Verwijderen</span><div class="rin"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span><span class="nm">'+h(i.name)+'</span>'+(eq(i)&&(i.done||!stepable(i.qty))?'<span class="qty">'+h(eq(i))+'</span>':'')+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)&&(parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1")?'<button class="one" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button>':'')+(!i.done&&stepable(i.qty)&&!((parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1"))?'<div class="step"><button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'">&minus;</button><output aria-live="polite">'+h(eq(i)||"1")+'</output><button data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div></div>';
 }
 function suggest(){
   const v=norm($("#inp").value);const onList=new Set(Object.values(S.items).filter(i=>i.list===cur&&!i.done).map(i=>norm(i.name)));
@@ -383,7 +388,7 @@ let editId=null,pendingPhoto=undefined,confirmDel=false;
 function editSheet(id){
   const i=S.items[id];if(!i)return;editId=id;pendingPhoto=undefined;
   const l=L();const isStaple=(l.staples||[]).some(s=>norm(s.n)===norm(i.name));
-  openSheet('<h3>Item bewerken</h3><label for="eN">Naam</label><input type="text" id="eN" value="'+h(i.name)+'"><label for="eQ">Hoeveelheid</label><input type="text" id="eQ" value="'+h(eq(i))+'" placeholder="bijv. 2 of 500 g"><label for="eT">Notitie</label><input type="text" id="eT" value="'+h(i.note)+'" placeholder="bijv. halfvol, merk maakt niet uit"><label for="eC">Afdeling</label><select id="eC">'+CATS.map(c=>'<option'+(c===i.cat?" selected":"")+'>'+h(c)+'</option>').join("")+'</select><label for="eL">Lijst</label><select id="eL">'+lists().map(x=>'<option value="'+h(x.id)+'"'+(x.id===i.list?" selected":"")+'>'+h(x.name)+'</option>').join("")+'</select><label>Foto van het product</label><div id="ePh">'+(i.photo&&String(i.photo).startsWith("data:image/")?'<img class="photo" alt="Productfoto" src="'+h(i.photo)+'">':'')+'</div><div class="btns" style="margin-top:8px"><button class="btn sec" data-act="photo">'+(i.photo?"Andere foto":"Foto toevoegen")+'</button>'+(i.photo?'<button class="btn sec" data-act="nophoto">Foto weg</button>':'')+'</div><label><input type="checkbox" id="eS"'+(isStaple?" checked":"")+'> Vast item op deze lijst</label><div class="btns"><button class="btn del" data-act="delitem">Verwijderen</button><button class="btn" data-act="saveitem">Opslaan</button></div>');
+  openSheet('<h3>Item bewerken</h3><label for="eN">Naam</label><input type="text" id="eN" value="'+h(i.name)+'"><label for="eQ">Hoeveelheid</label><input type="text" id="eQ" value="'+h(eq(i))+'" placeholder="bijv. 2 of 500 g"><label for="eT">Notitie</label><input type="text" id="eT" value="'+h(i.note)+'" placeholder="bijv. halfvol, merk maakt niet uit"><label for="eC">Afdeling</label><select id="eC">'+[...new Set([...(L().cats&&L().cats.length?L().cats:CATS),i.cat])].map(c=>'<option'+(c===i.cat?" selected":"")+'>'+h(c)+'</option>').join("")+'</select><label for="eL">Lijst</label><select id="eL">'+lists().map(x=>'<option value="'+h(x.id)+'"'+(x.id===i.list?" selected":"")+'>'+h(x.name)+'</option>').join("")+'</select><label>Foto van het product</label><div id="ePh">'+(i.photo&&String(i.photo).startsWith("data:image/")?'<img class="photo" alt="Productfoto" src="'+h(i.photo)+'">':'')+'</div><div class="btns" style="margin-top:8px"><button class="btn sec" data-act="photo">'+(i.photo?"Andere foto":"Foto toevoegen")+'</button>'+(i.photo?'<button class="btn sec" data-act="nophoto">Foto weg</button>':'')+'</div><label><input type="checkbox" id="eS"'+(isStaple?" checked":"")+'> Vast item op deze lijst</label><div class="btns"><button class="btn del" data-act="delitem">Verwijderen</button><button class="btn" data-act="saveitem">Opslaan</button></div>');
 }
 function saveItem(){
   const i=S.items[editId];if(!i)return closeSheet();
@@ -401,10 +406,11 @@ function newListSheet(){openSheet('<h3>Nieuwe lijst</h3><label for="lN">Naam</la
 function settingsSheet(){
   const l=L();if(!l)return newListSheet();confirmDel=false;
   const order=(l.cats&&l.cats.length?l.cats:CATS);
-  openSheet('<h3>Lijst instellen</h3><label for="sN">Naam</label><input type="text" id="sN" value="'+h(l.name)+'"><label>Kleur</label><div class="cols">'+COLORS.map((c,j)=>'<button class="sw" data-act="col" data-c="'+c+'" aria-pressed="'+(c===l.color)+'" style="background:'+c+'" aria-label="Kleur '+(j+1)+'"></button>').join("")+'</div><label>Looproute in de winkel (volgorde van afdelingen)</label><div id="ord">'+order.map((c,j)=>'<div class="ord"><span>'+h(c)+'</span><button data-act="up" data-j="'+j+'" aria-label="Omhoog">&uarr;</button><button data-act="down" data-j="'+j+'" aria-label="Omlaag">&darr;</button></div>').join("")+'</div><div class="btns"><button class="btn del" data-act="dellist" id="dl">Lijst verwijderen</button><button class="btn" data-act="savelist">Opslaan</button></div>');
+  openSheet('<h3>Lijst instellen</h3><label for="sN">Naam</label><input type="text" id="sN" value="'+h(l.name)+'"><label>Kleur</label><div class="cols">'+COLORS.map((c,j)=>'<button class="sw" data-act="col" data-c="'+c+'" aria-pressed="'+(c===l.color)+'" style="background:'+c+'" aria-label="Kleur '+(j+1)+'"></button>').join("")+'</div><label>Looproute in de winkel (volgorde van afdelingen)</label><div id="ord">'+ordHTML(order)+'</div><div class="form" style="margin-top:10px"><input type="text" id="newCat" placeholder="Afdeling toevoegen, bijv. Drogist" maxlength="30"><button class="go" data-act="addcat" aria-label="Afdeling toevoegen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div><div class="btns"><button class="btn del" data-act="dellist" id="dl">Lijst verwijderen</button><button class="btn" data-act="savelist">Opslaan</button></div>');
   tmpOrder=[...order];
 }
 let tmpOrder=[];
+function ordHTML(o){return o.map((c,j)=>'<div class="ord"><span>'+h(c)+'</span><button data-act="up" data-j="'+j+'" aria-label="'+h(c)+' omhoog">&uarr;</button><button data-act="down" data-j="'+j+'" aria-label="'+h(c)+' omlaag">&darr;</button><button data-act="rmcat" data-j="'+j+'" aria-label="'+h(c)+' verwijderen">&times;</button></div>').join("")}
 function staplesSheet(){
   const l=L();if(!l)return newListSheet();const st=l.staples||[];
   const onList=new Set(Object.values(S.items).filter(i=>i.list===cur&&!i.done).map(i=>norm(i.name)));
@@ -456,6 +462,15 @@ $("#mic").addEventListener("click",()=>{
   try{dict.start()}catch(e){}
 });
 let lpT=null,lpEl=null,lpX=0,lpY=0,lpFired=false;
+let swEl=null,swRow=null,swX=0,swY=0,swDx=0,swOn=false,swRedraw=false,swFired=false;
+function swEnd(commit){
+  const row=swRow,rin=swEl;swEl=null;swRow=null;swOn=false;
+  if(!row){return}
+  row.classList.remove("swiping");
+  if(commit){const id=row.dataset.id,i=S.items[id];rin.style.transform="translateX(-100%)";row.style.maxHeight=row.offsetHeight+"px";row.offsetHeight;row.classList.add("gone");
+    setTimeout(()=>{if(i){del("items/"+id);toast(i.name+" verwijderd")}if(swRedraw){swRedraw=false}render()},330)}
+  else{rin.style.transform="";if(swRedraw){swRedraw=false;setTimeout(render,220)}}
+}
 function lpCancel(){clearTimeout(lpT);lpT=null;if(lpEl)lpEl.classList.remove("press");lpEl=null}
 document.addEventListener("pointerdown",e=>{
   lpFired=false;const t=e.target.closest(".txt[data-act=tog]");if(!t||e.button>0)return;
@@ -463,13 +478,24 @@ document.addEventListener("pointerdown",e=>{
   setTimeout(()=>{if(lpEl===t)t.classList.add("press")},180);
   lpT=setTimeout(()=>{const id=t.dataset.id;lpCancel();lpFired=true;try{navigator.vibrate&&navigator.vibrate(15)}catch(_){}editSheet(id)},500);
 });
-document.addEventListener("pointermove",e=>{if(lpEl&&Math.hypot(e.clientX-lpX,e.clientY-lpY)>10)lpCancel()});
+document.addEventListener("pointerdown",e=>{
+  swFired=false;const rin=e.target.closest(".row .rin");if(!rin||e.button>0||e.target.closest(".step,.one"))return;
+  swEl=rin;swRow=rin.parentNode;swX=e.clientX;swY=e.clientY;swDx=0;swOn=false;
+},true);
+document.addEventListener("pointermove",e=>{
+  if(lpEl&&Math.hypot(e.clientX-lpX,e.clientY-lpY)>10)lpCancel();
+  if(!swEl)return;const dx=e.clientX-swX,dy=e.clientY-swY;
+  if(!swOn){if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){swEl=null;swRow=null;return}if(dx<-12&&Math.abs(dx)>Math.abs(dy)*1.3){swOn=true;lpCancel();swRow.classList.add("swiping")}else return}
+  swDx=Math.min(0,dx);swEl.style.transform="translateX("+swDx+"px)";e.preventDefault();
+},{passive:false});
+document.addEventListener("pointerup",()=>{if(!swEl)return;if(swOn){swFired=true;swEnd(swDx<-Math.min(140,swRow.offsetWidth*.38))}else{swEl=null;swRow=null}},true);
+document.addEventListener("pointercancel",()=>{if(swEl){if(swOn)swEnd(false);else{swEl=null;swRow=null}}},true);
 ["pointerup","pointercancel","scroll"].forEach(ev=>document.addEventListener(ev,lpCancel,true));
 document.addEventListener("contextmenu",e=>{if(e.target.closest(".txt[data-act=tog]"))e.preventDefault()});
 document.addEventListener("keydown",e=>{const t=e.target.closest&&e.target.closest(".txt[data-act=tog]");if(t&&e.key==="Enter"&&e.shiftKey){e.preventDefault();editSheet(t.dataset.id)}});
 document.addEventListener("click",e=>{
   const b=e.target.closest("[data-act]");if(!b)return;
-  if(b.dataset.act==="tog"&&lpFired){lpFired=false;e.preventDefault();return}const a=b.dataset.act,id=b.dataset.id;
+  if(b.dataset.act==="tog"&&(lpFired||swFired)){lpFired=false;swFired=false;e.preventDefault();return}const a=b.dataset.act,id=b.dataset.id;
   if(a==="tog")toggle(id);
   else if(a==="plus")step(id,1);
   else if(a==="minus")step(id,-1);
@@ -483,7 +509,9 @@ document.addEventListener("click",e=>{
   else if(a==="sugg"){const parts=$("#inp").value.split(",");parts.pop();parts.forEach(s=>s.trim()&&addItem(s));addItem(b.dataset.n);$("#inp").value="";suggest()}
   else if(a==="col"){b.parentNode.querySelectorAll(".sw").forEach(x=>x.setAttribute("aria-pressed",x===b))}
   else if(a==="createlist"){const n=$("#lN").value.trim();if(!n){$("#lN").focus();return}const c=($("#lCol .sw[aria-pressed=true]")||{}).dataset?.c||COLORS[0];const nid=rid();const max=Math.max(0,...lists().map(x=>x.order||0));put("lists/"+nid,{name:n,color:c,order:max+1,cats:[...CATS],staples:[],createdAt:Date.now()});cur=nid;LS.set("bs_cur",cur);closeSheet();render()}
-  else if(a==="up"||a==="down"){const j=+b.dataset.j,k=a==="up"?j-1:j+1;if(k<0||k>=tmpOrder.length)return;[tmpOrder[j],tmpOrder[k]]=[tmpOrder[k],tmpOrder[j]];$("#ord").innerHTML=tmpOrder.map((c,j)=>'<div class="ord"><span>'+h(c)+'</span><button data-act="up" data-j="'+j+'" aria-label="Omhoog">&uarr;</button><button data-act="down" data-j="'+j+'" aria-label="Omlaag">&darr;</button></div>').join("")}
+  else if(a==="up"||a==="down"){const j=+b.dataset.j,k=a==="up"?j-1:j+1;if(k<0||k>=tmpOrder.length)return;[tmpOrder[j],tmpOrder[k]]=[tmpOrder[k],tmpOrder[j]];$("#ord").innerHTML=ordHTML(tmpOrder)}
+  else if(a==="rmcat"){if(tmpOrder.length<=1)return;tmpOrder.splice(+b.dataset.j,1);$("#ord").innerHTML=ordHTML(tmpOrder)}
+  else if(a==="addcat"){const n=$("#newCat").value.trim().replace(/\s+/g," ").slice(0,30);if(!n){$("#newCat").focus();return}if(!tmpOrder.some(c=>c.toLowerCase()===n.toLowerCase()))tmpOrder.push(n.charAt(0).toUpperCase()+n.slice(1));$("#newCat").value="";$("#ord").innerHTML=ordHTML(tmpOrder);$("#ord").lastElementChild.scrollIntoView({block:"nearest"})}
   else if(a==="savelist"){const l=L();const c=($("#sheet .sw[aria-pressed=true]")||{}).dataset?.c||l.color;const d={...l,name:$("#sN").value.trim()||l.name,color:c,cats:tmpOrder};if(JSON.stringify(d)!==JSON.stringify(l))put("lists/"+cur,d);closeSheet()}
   else if(a==="dellist"){if(!confirmDel){confirmDel=true;b.textContent="Tik nogmaals: alles wissen";return}const lid=cur,l={...L()};const its=Object.entries(S.items).filter(([,i])=>i.list===lid);its.forEach(([iid])=>del("items/"+iid));del("lists/"+lid);closeSheet();toast("Lijst "+l.name+" verwijderd")}
   else if(a==="saveitem")saveItem();
@@ -492,7 +520,9 @@ document.addEventListener("click",e=>{
   else if(a==="nophoto"){pendingPhoto=null;$("#ePh").innerHTML=""}
   else if(a==="showdone"){showDone=!showDone;LS.set("bs_showdone",showDone);render()}
   else if(a==="cleardone"){const its=Object.entries(S.items).filter(([,i])=>i.list===cur&&i.done);its.forEach(([iid])=>del("items/"+iid));toast(its.length+" afgevinkte items gewist")}
-  else if(a==="shop"){const p=S.pings.now;const mine=p&&p.active&&p.by===me&&Date.now()-p.at<3*3600e3;put("pings/now",{by:me,at:Date.now(),list:cur,active:!mine});toast(mine?"Fijn, alles binnen!":"Je gezin ziet nu dat je in de winkel bent")}
+  else if(a==="shop"){const p=S.pings.now;const mine=p&&p.active&&p.by===me&&Date.now()-p.at<3*3600e3;put("pings/now",{by:me,at:Date.now(),list:cur,active:!mine});
+    if(mine){const lid=(p.list&&S.lists[p.list])?p.list:cur;const its=Object.entries(S.items).filter(([,i])=>i.list===lid&&i.done);its.forEach(([iid])=>del("items/"+iid));toast(its.length?"Klaar! "+its.length+" gehaalde artikel"+(its.length>1?"en":"")+" opgeruimd":"Klaar met winkelen");return}
+    toast(mine?"Fijn, alles binnen!":"Je gezin ziet nu dat je in de winkel bent")}
   else if(a==="stt"){const on=b.getAttribute("aria-pressed")!=="true";b.setAttribute("aria-pressed",on);b.classList.toggle("on",on)}
   else if(a==="addst"){const n=$("#stN").value.trim();if(!n)return;const l=L();const {name}=parse(n);if(!(l.staples||[]).some(s=>norm(s.n)===norm(name)))put("lists/"+cur,{...l,staples:[...(l.staples||[]),{n:name,c:guessCat(name)}]});staplesSheet()}
   else if(a==="newhh")startHH(newCode());
