@@ -300,7 +300,12 @@ const UNITS={g:{step:100,min:50,def:500},kg:{step:.5,min:.5,def:1},ml:{step:250,
 const COUNTU=["pak","zak","blik","fles","bakje","bos","doos","net","rol"];
 const UALIAS={x:"",st:"",stuk:"",stuks:"",gr:"g",gram:"g",kilo:"kg",kilogram:"kg",liter:"l",ltr:"l",pakken:"pak",pakje:"pak",pakjes:"pak",zakken:"zak",zakje:"zak",blikken:"blik",flessen:"fles",bakjes:"bakje",bosjes:"bos",dozen:"doos",rollen:"rol"};
 const DEFW=[[/gehakt|stoofvlees|draadjesvlees|hachee/,"500 g"],[/shoarma|kipreepjes|kipblokjes|kipdij/,"400 g"],[/^(kaas van de|gesneden kaas|plakken kaas)/,"200 g"]];
-function pq(q){q=String(q||"").trim();if(!q)return{n:1,u:""};const m=q.match(/^(\d+(?:[.,]\d+)?)\s*([a-z]*)$/i);if(!m)return null;let u=m[2].toLowerCase();if(u in UALIAS)u=UALIAS[u];if(u&&!UNITS[u]&&!COUNTU.includes(u))return null;return{n:parseFloat(m[1].replace(",",".")),u}}
+function pq(q){q=String(q||"").trim();if(!q)return{n:1,u:""};
+  if(q.includes("+")){const ps=q.split("+").map(x=>pq1(x.trim()));if(ps.some(x=>!x))return null;return ps.reduce((a,b)=>addQ(a,b))}
+  return pq1(q)}
+function toBase(p){return p.u==="kg"?{n:p.n*1000,u:"g"}:p.u==="l"?{n:p.n*1000,u:"ml"}:p}
+function addQ(a,b){if(a.u===b.u)return{n:+(a.n+b.n).toFixed(3),u:a.u};const A=toBase(a),B=toBase(b);if(A.u===B.u&&isMeasure(A.u)){const big=a.u==="kg"||a.u==="l"?a.u:b.u==="kg"||b.u==="l"?b.u:A.u;const n=A.n+B.n;return big===A.u?{n,u:A.u}:{n:+(n/1000).toFixed(3),u:big}}return b}
+function pq1(q){if(!q)return{n:1,u:""};const m=q.match(/^(\d+(?:[.,]\d+)?)\s*([a-z]*)$/i);if(!m)return null;let u=m[2].toLowerCase();if(u in UALIAS)u=UALIAS[u];if(u&&!UNITS[u]&&!COUNTU.includes(u))return null;return{n:parseFloat(m[1].replace(",",".")),u}}
 const fmtN=n=>Number.isInteger(n)?String(n):String(+n.toFixed(2)).replace(".",",");
 const fq=p=>p.u?fmtN(p.n)+" "+p.u:(p.n===1?"":fmtN(p.n));
 const stepOf=u=>(UNITS[u]&&UNITS[u].step)||1, minOf=u=>(UNITS[u]&&UNITS[u].min)||1;
@@ -322,8 +327,8 @@ function addItem(raw,opts={}){
   if(ex){
     const [id,i0]=ex;const i=clean(i0);let nq=i.qty||"";
     const a=pq(nq),b=pq(q);
-    if(a&&b&&a.u===b.u)nq=fq({n:a.n+b.n,u:a.u});
-    else nq=[nq||"1",q||"1"].join(" + ");
+    if(a&&b)nq=fq(addQ(a,b));
+    else nq=q||nq;
     put("items/"+id,{...i,qty:nq});toast(name+" stond er al: samengevoegd");
   }else{
     const id=rid();put("items/"+id,{list:cur,name,qty:q,note:"",cat,done:false,by:me,at:Date.now()});
