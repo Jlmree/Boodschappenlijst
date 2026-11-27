@@ -28,25 +28,29 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Inter,system-u
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:3px solid var(--acc);outline-offset:2px}
-.top{background:var(--lc);color:#fff;padding:calc(14px + env(safe-area-inset-top)) max(4vw,14px) 16px;transition:background .3s}
+.top{background:var(--lc);color:#fff;padding:calc(10px + env(safe-area-inset-top)) max(4vw,14px) 12px;transition:background .3s}
 .tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .tab{flex:none;border:0;border-radius:99px;padding:8px 14px;min-height:40px;background:rgba(255,255,255,.18);color:#fff;font-weight:600}
 .tab[aria-current=true]{background:#fff;color:var(--lc)}
 .tab.add{background:transparent;border:1.5px dashed rgba(255,255,255,.6)}
-.head{display:flex;align-items:flex-end;gap:10px;margin-top:14px}
-h1{font:700 clamp(30px,8vw,44px)/1.05 Outfit,sans-serif;margin:0;flex:1;text-wrap:balance}
+.bar1{display:flex;align-items:center;gap:8px}.bar1 .tabs{flex:1}
+.head{display:flex;align-items:baseline;gap:10px;margin-top:10px}
+h1{font:700 clamp(26px,7vw,36px)/1.1 Outfit,sans-serif;margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.head .sub{margin:0;white-space:nowrap}
+.prog{height:6px;border-radius:9px;background:rgba(255,255,255,.22);margin-top:10px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:#fff;border-radius:9px;transition:width .35s ease}
 .sub{opacity:.85;font-size:14px;margin-top:4px}
-.ib{border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:12px;min-width:44px;height:44px;display:grid;place-items:center;font-weight:600;padding:0 12px}
+.ib{flex:none;border:0;background:rgba(255,255,255,.18);color:#fff;border-radius:12px;min-width:42px;height:42px;display:grid;place-items:center;font-weight:600;padding:0 12px}
 .ib svg{width:22px;height:22px}
-.acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.acts{display:flex;gap:8px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.acts>*{flex:none}
 .pill{min-height:36px;display:inline-flex;align-items:center;gap:6px;font-size:13px;background:rgba(0,0,0,.18);border-radius:99px;padding:4px 10px}
 .dot{width:8px;height:8px;border-radius:50%;background:#7CFFB0}
 .dot.off{background:#ffc04d}.dot.loc{background:#ccc}
 .wrap{max-width:720px;margin:0 auto;padding:0 max(4vw,14px)}
 .banner{margin:14px 0 0;padding:12px 14px;border-radius:14px;background:light-dark(#fff1ee,#3a1a14);color:light-dark(#8a2414,#ffb4a6);font-size:15px}
 .banner.info{background:var(--card);color:var(--ink)}
-.cat{margin-top:22px}
-.cat h2{font:600 13px/1 Inter,sans-serif;color:var(--mut);margin:0 0 6px;display:flex;justify-content:space-between}
+.cat{margin-top:12px}
+.cat h2{font:600 13px/1 Inter,sans-serif;color:var(--mut);margin:0;padding:10px 0 6px;display:flex;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:2}
 .row{display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid var(--line)}
 .row.new{animation:in .25s ease}
 @keyframes in{from{opacity:0;transform:translateY(-4px)}}
@@ -66,6 +70,8 @@ h1{font:700 clamp(30px,8vw,44px)/1.05 Outfit,sans-serif;margin:0;flex:1;text-wra
 .done .nm{text-decoration:line-through;color:var(--mut)}
 .qty{display:inline-block;margin-left:6px;background:var(--card);border-radius:8px;padding:0 7px;font-size:14px;font-weight:600;white-space:nowrap}
 .meta{display:block;font-size:13px;color:var(--mut)}
+.one{flex:none;width:42px;height:42px;border-radius:50%;border:1.5px solid var(--line);background:transparent;color:var(--lc);font:600 22px/1 Inter,sans-serif;padding:0;display:grid;place-items:center}
+:root .one{color:light-dark(var(--lc),#9fe0b9)}
 .step{flex:none;margin-left:4px;display:flex;align-items:center;border:1.5px solid var(--line);border-radius:12px;overflow:hidden}
 .step button{width:40px;height:42px;border:0;background:var(--card);font:600 20px/1 Inter,sans-serif;color:var(--lc);padding:0}
 :root .step button{color:light-dark(var(--lc),#9fe0b9)}
@@ -119,15 +125,16 @@ h1{font:700 clamp(30px,8vw,44px)/1.05 Outfit,sans-serif;margin:0;flex:1;text-wra
 </head>
 <body>
 <header class="top" id="top">
-  <nav class="tabs" id="tabs" aria-label="Lijsten"></nav>
-  <div class="head">
-    <div style="flex:1"><h1 id="title">Boodschappen</h1><div class="sub" id="count"></div></div>
+  <div class="bar1">
+    <nav class="tabs" id="tabs" aria-label="Lijsten"></nav>
     <button class="ib" id="shareBtn" data-act="share" aria-label="Delen met gezin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.4 6-5.4s5.4 2 6 5.4"/><path d="M17 7v6M14 10h6"/></svg></button>
     <button class="ib" data-act="settings" aria-label="Lijst instellen"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
   </div>
+  <div class="head"><h1 id="title">Boodschappen</h1><div class="sub" id="count"></div></div>
+  <div class="prog" aria-hidden="true"><i id="progBar"></i></div>
   <div class="acts">
     <span class="pill" id="sync"><i class="dot loc"></i><span>Laden…</span></span>
-    <button class="pill" style="border:0;color:#fff" data-act="shop" id="shopBtn">Ik ga boodschappen doen</button>
+    <button class="pill" style="border:0;color:#fff" data-act="shop" id="shopBtn">Ik ga winkelen</button>
     <button class="pill" style="border:0;color:#fff" data-act="staples">Vaste items</button>
   </div>
 </header>
@@ -146,11 +153,11 @@ h1{font:700 clamp(30px,8vw,44px)/1.05 Outfit,sans-serif;margin:0;flex:1;text-wra
 <script>
 {
 const CATS=["Groente & fruit","Brood & bakkerij","Zuivel & eieren","Kaas & vleeswaren","Vlees & vis","Diepvries","Houdbaar","Ontbijt & beleg","Drinken","Snoep & chips","Baby","Huishouden","Verzorging","Dier","Overig"];
-const KW={"Groente & fruit":"appel peer banaan sinaasappel mandarijn citroen limoen druif aardbei bes blauwe kiwi mango ananas meloen tomaat komkommer sla ijsberg rucola spinazie wortel ui knoflook prei paprika courgette aubergine broccoli bloemkool champignon paddenstoel aardappel krieltje avocado boon sperzie snijbonen kool andijvie radijs selderij gember kruiden peterselie basilicum bieslook groente fruit",
+const KW={"Groente & fruit":"appel peer peren banaan bananen tomaten uien prei mandarijnen sinaasappelen sinaasappel mandarijn citroen limoen druif aardbei bes blauwe kiwi mango ananas meloen tomaat komkommer sla ijsberg rucola spinazie wortel ui knoflook prei paprika courgette aubergine broccoli bloemkool champignon paddenstoel aardappel krieltje avocado boon sperzie snijbonen kool andijvie radijs selderij gember kruiden peterselie basilicum bieslook groente fruit",
 "Brood & bakkerij":"brood bolletje broodje croissant stokbrood beschuit krentenbol tijger volkoren wrap pita tortilla cake koek ontbijtkoek",
 "Zuivel & eieren":"melk karnemelk yoghurt kwark vla room slagroom boter roomboter margarine ei eieren chocolademelk zuivel skyr",
 "Kaas & vleeswaren":"kaas geitenkaas mozzarella feta parmezaan ham kipfilet salami cervelaat rookvlees leverworst filet americain smeerkaas",
-"Vlees & vis":"gehakt kip kippen speklap spek worst rookworst biefstuk hamburger schnitzel vlees vis zalm tonijn kabeljauw garnaal",
+"Vlees & vis":"gehakt kipdijen drumsticks kippen speklap spek worst rookworst biefstuk hamburger schnitzel vlees vis zalm tonijn kabeljauw garnaal",
 "Diepvries":"diepvries ijs pizza friet patat spinazie-diepvries ijsjes",
 "Houdbaar":"pasta spaghetti macaroni penne rijst noedel mie couscous bloem meel suiker zout peper olie olijfolie azijn saus ketchup mayonaise mosterd soep bouillon blik tomatenblokjes passata linzen kikkererwten",
 "Ontbijt & beleg":"hagelslag pindakaas jam honing muesli cornflakes havermout cruesli appelstroop nutella vlokken",
@@ -167,7 +174,7 @@ const rid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const norm=s=>s.trim().toLowerCase().replace(/\s+/g," ");
 const key=s=>norm(s).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60)||"x";
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-function guessCat(name){const n=norm(name);for(const c in KW){for(const w of KW[c].split(" ")){if(w.length>2&&(n===w||n.includes(w)))return c}}return "Overig"}
+function guessCat(name){const n=norm(name);let best="Overig",bl=0;for(const c in KW){for(const w of KW[c].split(" ")){if(w.length>2&&w.length>bl&&(n===w||n.includes(w))){best=c;bl=w.length}}}return best}
 
 const CFG=window.BOODSCHAPPEN_CONFIG||{};const HASDB=!!(CFG.supabaseUrl&&CFG.supabaseKey);
 const ALPH="abcdefghjkmnpqrstuvwxyz23456789";const newCode=()=>{const a=new Uint32Array(12);crypto.getRandomValues(a);return [...a].map(x=>ALPH[x%ALPH.length]).join("")};
@@ -296,12 +303,12 @@ function toggle(id){
 
 /* ---------- render ---------- */
 function status(msg){
-  const el=$("#sync");let cls="loc",t="Alleen op dit toestel";
+  const el=$("#sync");let cls="loc",t="Alleen dit toestel";
   if(mode==="db"){
     if(msg){cls="off";t=msg}
     else if(!navigator.onLine||Q.length&&!flushing&&retryT){cls="off";t="Offline"+(Q.length?" · "+Q.length+" wijziging"+(Q.length>1?"en":"")+" wacht"+(Q.length>1?"en":""):"")}
     else if(Q.length){cls="";t="Opslaan…"}
-    else if(serverOk){cls="";t=readonly?"Live · alleen bekijken":"Live gedeeld"}
+    else if(serverOk){cls="";t="Live"}
     else{cls="off";t="Verbinden…"}
   }
   el.innerHTML='<i class="dot '+cls+'"></i><span></span>';el.lastChild.textContent=t;
@@ -331,10 +338,11 @@ function draw(){if(paintedList!==cur){firstPaint=true;paintedList=cur}
   $("#title").textContent=l?l.name:"Boodschappen";
   const its=Object.entries(S.items).map(([id,i])=>({id,...i})).filter(i=>i.list===cur);
   const open=its.filter(i=>!i.done),done=its.filter(i=>i.done).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
-  $("#count").textContent=l?(open.length?open.length+" nog te halen":"Alles in huis")+(done.length?" · "+done.length+" in de kar":""):"";
+  $("#count").textContent=l?(open.length?open.length+" te halen":(done.length?"Alles gehaald":"Leeg"))+(done.length&&open.length?" · "+done.length+" gehaald":""):"";
+  $("#progBar").style.width=(open.length+done.length?Math.round(100*done.length/(open.length+done.length)):0)+"%";
   // winkel-melding
   const p=S.pings.now;const active=p&&p.active&&Date.now()-p.at<3*3600e3;
-  $("#shopBtn").textContent=active&&p.by===me?"Klaar met winkelen":"Ik ga boodschappen doen";
+  $("#shopBtn").textContent=active&&p.by===me?"Klaar met winkelen":"Ik ga winkelen";
   let html="";
   if(readonly)html+='<div class="banner">Je kunt deze lijst alleen bekijken. Vraag de eigenaar je als Bewerker uit te nodigen.</div>';
   if(active&&p.by!==me){const ln=S.lists[p.list];html+='<div class="banner"><b>'+h(who(p.by))+'</b> is nu boodschappen aan het doen'+(ln?' ('+h(ln.name)+')':'')+'. Snel nog iets toevoegen!</div>'}
@@ -358,7 +366,7 @@ function row(i){
   const meta=[i.note,i.done?"gehaald door "+who(i.doneBy):(i.by&&mode==="db"&&i.by!==me?"door "+who(i.by):"")].filter(Boolean).map(h).join(" · ");
   if(!firstPaint&&!seen.has(i.id)&&!NEWAT[i.id])NEWAT[i.id]=Date.now();
   const nw=NEWAT[i.id]&&Date.now()-NEWAT[i.id]<1500?" new":"";
-  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span><span class="nm">'+h(i.name)+'</span>'+(eq(i)&&(i.done||!stepable(i.qty))?'<span class="qty">'+h(eq(i))+'</span>':'')+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)?'<div class="step"><button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'">&minus;</button><output aria-live="polite">'+h(eq(i)||"1")+'</output><button data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div>';
+  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span><span class="nm">'+h(i.name)+'</span>'+(eq(i)&&(i.done||!stepable(i.qty))?'<span class="qty">'+h(eq(i))+'</span>':'')+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)&&(parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1")?'<button class="one" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button>':'')+(!i.done&&stepable(i.qty)&&!((parseInt(eq(i))||1)===1&&!/\D/.test(eq(i)||"1"))?'<div class="step"><button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'">&minus;</button><output aria-live="polite">'+h(eq(i)||"1")+'</output><button data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'">+</button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div>';
 }
 function suggest(){
   const v=norm($("#inp").value);const onList=new Set(Object.values(S.items).filter(i=>i.list===cur&&!i.done).map(i=>norm(i.name)));
