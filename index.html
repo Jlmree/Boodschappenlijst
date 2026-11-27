@@ -77,6 +77,8 @@ h1{font:700 clamp(26px,7vw,36px)/1.1 Outfit,sans-serif;margin:0;flex:1;overflow:
 .done .qb{background:var(--card);color:var(--mut)}
 .qb.pop{animation:pop .25s ease}@keyframes pop{50%{transform:scale(1.18)}}
 .meta{display:block;font-size:13px;color:var(--mut)}
+.nt{display:block;font-size:14px;font-weight:500;color:var(--ink);opacity:.8;margin-top:1px}
+.done .nt{opacity:.5}
 .qrow .qs{flex:none;width:48px;height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font:500 22px/1 Inter,sans-serif;color:var(--ink)}
 .qrow input{text-align:center;font-weight:600}
 .qc{flex:none;display:flex;align-items:center;gap:2px}
@@ -295,57 +297,54 @@ function makeSupa(H){
 const lists=()=>Object.entries(S.lists).map(([id,l])=>({id,...l})).sort((a,b)=>(a.order||0)-(b.order||0));
 const L=()=>S.lists[cur];
 function ensureCur(){const ls=lists();if(!ls.length){cur=null;return}if(!S.lists[cur])cur=ls[0].id;LS.set("bs_cur",cur)}
-/* ---------- hoeveelheden en eenheden ---------- */
-const UNITS={g:{step:100,min:50,def:500},kg:{step:.5,min:.5,def:1},ml:{step:250,min:100,def:500},l:{step:.5,min:.5,def:1}};
-const COUNTU=["pak","zak","blik","fles","bakje","bos","doos","net","rol"];
-const UALIAS={x:"",st:"",stuk:"",stuks:"",gr:"g",gram:"g",kilo:"kg",kilogram:"kg",liter:"l",ltr:"l",pakken:"pak",pakje:"pak",pakjes:"pak",zakken:"zak",zakje:"zak",blikken:"blik",flessen:"fles",bakjes:"bakje",bosjes:"bos",dozen:"doos",rollen:"rol"};
-const DEFW=[[/gehakt|stoofvlees|draadjesvlees|hachee/,"500 g"],[/shoarma|kipreepjes|kipblokjes|kipdij/,"400 g"],[/^(kaas van de|gesneden kaas|plakken kaas)/,"200 g"]];
-function pq(q){q=String(q||"").trim();if(!q)return{n:1,u:""};
-  if(q.includes("+")){const ps=q.split("+").map(x=>pq1(x.trim()));if(ps.some(x=>!x))return null;return ps.reduce((a,b)=>addQ(a,b))}
-  return pq1(q)}
-function toBase(p){return p.u==="kg"?{n:p.n*1000,u:"g"}:p.u==="l"?{n:p.n*1000,u:"ml"}:p}
-function addQ(a,b){if(a.u===b.u)return{n:+(a.n+b.n).toFixed(3),u:a.u};const A=toBase(a),B=toBase(b);if(A.u===B.u&&isMeasure(A.u)){const big=a.u==="kg"||a.u==="l"?a.u:b.u==="kg"||b.u==="l"?b.u:A.u;const n=A.n+B.n;return big===A.u?{n,u:A.u}:{n:+(n/1000).toFixed(3),u:big}}return b}
-function pq1(q){if(!q)return{n:1,u:""};const m=q.match(/^(\d+(?:[.,]\d+)?)\s*([a-z]*)$/i);if(!m)return null;let u=m[2].toLowerCase();if(u in UALIAS)u=UALIAS[u];if(u&&!UNITS[u]&&!COUNTU.includes(u))return null;return{n:parseFloat(m[1].replace(",",".")),u}}
-const fmtN=n=>Number.isInteger(n)?String(n):String(+n.toFixed(2)).replace(".",",");
-const fq=p=>p.u?fmtN(p.n)+" "+p.u:(p.n===1?"":fmtN(p.n));
-const stepOf=u=>(UNITS[u]&&UNITS[u].step)||1, minOf=u=>(UNITS[u]&&UNITS[u].min)||1;
-const isMeasure=u=>!!UNITS[u];
+/* ---------- aantal in stuks, maat (gram/liter) in de omschrijving ---------- */
+const MEAS="kilogram|kilo|kg|gram|gr|g|liter|ltr|ml|cl|l";
+const MALIAS={kilo:"kg",kilogram:"kg",gr:"g",gram:"g",liter:"l",ltr:"l"};
+const CNTW="x|stuks|stuk|st|pakken|pakjes|pakje|pak|zakken|zakje|zak|blikken|blik|flessen|fles|bakjes|bakje|bosjes|bos|dozen|doos|net|rollen|rol";
+const NUM="\\d+(?:[.,]\\d+)?";
+const reML=new RegExp("^("+NUM+")\\s*("+MEAS+")\\.?\\s+(.+)$","i"),reMT=new RegExp("^(.+?)\\s+("+NUM+")\\s*("+MEAS+")\\.?$","i");
+const reCL=new RegExp("^(\\d+)\\s*(?:"+CNTW+")?\\.?\\s+(.+)$","i"),reCT=new RegExp("^(.+?)\\s+(\\d+)\\s*(?:"+CNTW+")?$","i");
+const reMeasStart=new RegExp("^"+NUM+"\\s*(?:"+MEAS+")\\b\\.?","i"),reMeasAny=new RegExp("("+NUM+")\\s*("+MEAS+")\\b","i");
+function fmtMeas(n,u){u=u.toLowerCase();u=MALIAS[u]||u;return String(n).replace(".",",")+" "+u}
+function measOf(q){const m=String(q||"").match(reMeasAny);return m?fmtMeas(m[1],m[2]):""}
+function cntOf(q){q=String(q||"").trim();if(!q)return 1;let t=0;for(const part of q.split("+")){const p=part.trim(),m=p.match(/^(\d+)/);t+=(m&&!reMeasStart.test(p))?+m[1]:1}return Math.max(1,t)}
+function mergeNote(old,meas){old=String(old||"").trim();if(!meas)return old;if(!old)return meas;if(reMeasStart.test(old))return old.replace(reMeasStart,meas);return meas+", "+old}
+function noteOf(i){const m=measOf(i.qty);const n=String(i.note||"");return m&&!n.includes(m)?mergeNote(n,m):n}
 function parse(raw){
-  let t=raw.trim(),q="";let m;
-  if(m=t.match(/^(\d+(?:[.,]\d+)?\s*(?:x|kg|kilo|kilogram|g|gr|gram|l|liter|ltr|ml|st|stuk|stuks|pak|pakken|pakje|pakjes|zak|zakken|zakje|blik|blikken|fles|flessen|bakje|bakjes|bos|bosjes|doos|dozen|net|rol|rollen)?)\s+(.+)$/i)){q=m[1].replace(/\s+/g," ");t=m[2]}
-  else if(m=t.match(/^(.+?)\s+(\d+(?:[.,]\d+)?\s*(?:x|kg|kilo|kilogram|g|gr|gram|l|liter|ltr|ml|st|stuk|stuks|pak|pakken|pakje|pakjes|zak|zakken|zakje|blik|blikken|fles|flessen|bakje|bakjes|bos|bosjes|doos|dozen|net|rol|rollen)?)$/i)){t=m[1];q=m[2]}
-  {const p=pq(q);if(p)q=fq(p)}
-  return{name:t.charAt(0).toUpperCase()+t.slice(1),qty:q}
+  let t=raw.trim(),n=1,meas="",m;
+  if(m=t.match(/^(\d+)\s*x\s+(.+)$/i)){n=+m[1];t=m[2]}
+  if(m=t.match(reML)){meas=fmtMeas(m[1],m[2]);t=m[3]}
+  else if(m=t.match(reMT)){t=m[1];meas=fmtMeas(m[2],m[3])}
+  if(n===1){if(m=t.match(reCL)){n=+m[1];t=m[2]}else if(m=t.match(reCT)){t=m[1];n=+m[2]}}
+  n=Math.max(1,n||1);
+  return{name:t.charAt(0).toUpperCase()+t.slice(1),qty:n>1?String(n):"",note:meas}
 }
 function addItem(raw,opts={}){
   if(!cur){newListSheet();return}
-  const {name,qty}=parse(raw);if(!name)return;
+  const p=parse(raw),name=p.name;if(!name)return;
   const ex=Object.entries(S.items).find(([id,i])=>i.list===cur&&!i.done&&norm(i.name)===norm(name));
   const k=key(name),kn=S.known[k];
   const cat=opts.cat||(kn&&kn.cat)||guessCat(name);
-  let q=qty;if(!q){if(kn&&kn.dq)q=kn.dq;else{const n=norm(name);const d=DEFW.find(([re])=>re.test(n));if(d&&!(kn&&kn.dq===""))q=d[1]}}
+  const note=p.note||(kn&&kn.dn)||"";
   if(ex){
-    const [id,i0]=ex;const i=clean(i0);let nq=i.qty||"";
-    const a=pq(nq),b=pq(q);
-    if(a&&b)nq=fq(addQ(a,b));
-    else nq=q||nq;
-    put("items/"+id,{...i,qty:nq});toast(name+" stond er al: samengevoegd");
+    const [id,i0]=ex;const i=clean(i0);const c=cntOf(i.qty)+cntOf(p.qty);
+    put("items/"+id,{...i,qty:c>1?String(c):"",note:p.note?mergeNote(i.note,p.note):i.note});toast(name+" stond er al: nu "+c+"×");
   }else{
-    const id=rid();put("items/"+id,{list:cur,name,qty:q,note:"",cat,done:false,by:me,at:Date.now()});
+    const id=rid();put("items/"+id,{list:cur,name,qty:p.qty,note,cat,done:false,by:me,at:Date.now()});
     lastAdded=id;
   }
-  const pk=pq(q);const nk={...(kn||{}),name,cat,n:((kn&&kn.n)||0)+1,last:Date.now()};if(qty&&pk&&isMeasure(pk.u))nk.dq=fq(pk);
+  const nk={...(kn||{}),name,cat,n:((kn&&kn.n)||0)+1,last:Date.now()};if(p.note)nk.dn=p.note;delete nk.dq;
   put("known/"+k,nk);
 }
 let lastAdded=null;
-function eq(i){const q=String(i.qty||"").trim();const a=i.adds?Object.values(i.adds).reduce((x,y)=>x+(+y||0),0):0;const p=pq(q);if(!p)return q;if(!a)return fq(p);return fq({n:Math.max(minOf(p.u),+(p.n+a*stepOf(p.u)).toFixed(3)),u:p.u})}
-const clean=i=>{const d={...i,qty:eq(i)};delete d.adds;return d};
-const stepable=q=>!!pq(q);
-const canMinus=i=>{const p=pq(eq(i));return !!p&&p.n-stepOf(p.u)>=minOf(p.u)-1e-9};
+function eq(i){const a=i.adds?Object.values(i.adds).reduce((x,y)=>x+(+y||0),0):0;const c=Math.max(1,cntOf(i.qty)+a);return c>1?String(c):""}
+const clean=i=>{const d={...i,qty:eq(i),note:noteOf(i)};delete d.adds;return d};
+const stepable=()=>true;
+const canMinus=i=>cntOf(eq(i))>1;
 const POP={};
-function qlabel(i){const q=eq(i);const p=pq(q);if(!p)return q;if(!p.u)return p.n!==1?fmtN(p.n)+"\u00d7":"";return fq(p)}
+function qlabel(i){const c=cntOf(eq(i));return c>1?c+"×":""}
 function step(id,d){POP[id]=Date.now();
-  const i=S.items[id];if(!i||!stepable(i.qty))return;if(d<0&&!canMinus(i))return;
+  const i=S.items[id];if(!i)return;if(d<0&&!canMinus(i))return;
   write({op:"upd",path:"items/"+id,data:{adds:{[me]:((i.adds&&+i.adds[me])||0)+d}}});
 }
 function toggle(id){
@@ -415,10 +414,10 @@ function draw(){if(swEl){swRedraw=true;return}if(paintedList!==cur){firstPaint=t
   if(document.activeElement===$("#inp"))suggest();
 }
 function row(i){
-  const meta=[i.note,i.done?"gehaald door "+who(i.doneBy):(i.by&&mode==="db"&&i.by!==me?"door "+who(i.by):"")].filter(Boolean).map(h).join(" · ");
+  const nt=noteOf(i);const meta=[i.done?"gehaald door "+who(i.doneBy):(i.by&&mode==="db"&&i.by!==me?"door "+who(i.by):"")].filter(Boolean).map(h).join(" · ");
   if(!firstPaint&&!seen.has(i.id)&&!NEWAT[i.id])NEWAT[i.id]=Date.now();
   const nw=NEWAT[i.id]&&Date.now()-NEWAT[i.id]<1500?" new":"";
-  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'" data-id="'+h(i.id)+'"><span class="delbg" aria-hidden="true">Verwijderen</span><div class="rin"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>'+(qlabel(i)?'<span class="qb'+(POP[i.id]&&Date.now()-POP[i.id]<400?" pop":"")+'">'+h(qlabel(i))+'</span>':'')+'<span class="nm">'+h(i.name)+'</span>'+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)?'<div class="qc">'+(canMinus(i)?'<button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'"><span>&minus;</span></button>':'')+'<button class="pl" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'"><span>+</span></button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div></div>';
+  return '<div class="row'+(i.done?" done":"")+nw+'" data-key="'+h(i.id)+'" data-id="'+h(i.id)+'"><span class="delbg" aria-hidden="true">Verwijderen</span><div class="rin"><button class="txt" data-act="tog" data-id="'+h(i.id)+'" aria-label="'+(i.done?"Terugzetten: ":"Afvinken: ")+h(i.name)+'" aria-description="Lang indrukken of Shift+Enter voor details"><span class="chk" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>'+(qlabel(i)?'<span class="qb'+(POP[i.id]&&Date.now()-POP[i.id]<400?" pop":"")+'">'+h(qlabel(i))+'</span>':'')+'<span class="nm">'+h(i.name)+'</span>'+(nt?'<span class="nt">'+h(nt)+'</span>':'')+(meta?'<span class="meta">'+meta+'</span>':'')+'</span></button>'+(!i.done&&stepable(i.qty)?'<div class="qc">'+(canMinus(i)?'<button data-act="minus" data-id="'+h(i.id)+'" aria-label="Eén minder '+h(i.name)+'"><span>&minus;</span></button>':'')+'<button class="pl" data-act="plus" data-id="'+h(i.id)+'" aria-label="Eén meer '+h(i.name)+'"><span>+</span></button></div>':'')+(typeof i.photo==="string"&&i.photo.startsWith("data:image/")?'<img class="thumb" alt="" src="'+h(i.photo)+'">':'')+'</div></div>';
 }
 function suggest(){
   const v=norm($("#inp").value);const onList=new Set(Object.values(S.items).filter(i=>i.list===cur&&!i.done).map(i=>norm(i.name)));
@@ -435,18 +434,18 @@ let editId=null,pendingPhoto=undefined,confirmDel=false;
 function editSheet(id){setTimeout(()=>{if($("#eU"))syncU()},0);
   const i=S.items[id];if(!i)return;editId=id;pendingPhoto=undefined;
   const l=L();const isStaple=(l.staples||[]).some(s=>norm(s.n)===norm(i.name));
-  openSheet('<h3>Item bewerken</h3><label for="eN">Naam</label><input type="text" id="eN" value="'+h(i.name)+'"><label for="eQ">Hoeveelheid</label><div class="form qrow"><button type="button" class="qs" data-act="eqs" data-d="-1" aria-label="Minder">&minus;</button><input type="text" id="eQ" value="'+h(eq(i))+'" placeholder="1" inputmode="decimal"><button type="button" class="qs" data-act="eqs" data-d="1" aria-label="Meer">+</button></div><div class="cols" id="eU" style="margin-top:8px">'+UCHIPS.map(([u,lab])=>'<button type="button" class="chip" data-act="equ" data-u="'+u+'" aria-pressed="false">'+lab+'</button>').join("")+'</div><label for="eT">Notitie</label><input type="text" id="eT" value="'+h(i.note)+'" placeholder="bijv. halfvol, merk maakt niet uit"><label for="eC">Afdeling</label><select id="eC">'+[...new Set([...(L().cats&&L().cats.length?L().cats:CATS),i.cat])].map(c=>'<option'+(c===i.cat?" selected":"")+'>'+h(c)+'</option>').join("")+'</select><label for="eL">Lijst</label><select id="eL">'+lists().map(x=>'<option value="'+h(x.id)+'"'+(x.id===i.list?" selected":"")+'>'+h(x.name)+'</option>').join("")+'</select><label>Foto van het product</label><div id="ePh">'+(i.photo&&String(i.photo).startsWith("data:image/")?'<img class="photo" alt="Productfoto" src="'+h(i.photo)+'">':'')+'</div><div class="btns" style="margin-top:8px"><button class="btn sec" data-act="photo">'+(i.photo?"Andere foto":"Foto toevoegen")+'</button>'+(i.photo?'<button class="btn sec" data-act="nophoto">Foto weg</button>':'')+'</div><label><input type="checkbox" id="eS"'+(isStaple?" checked":"")+'> Vast item op deze lijst</label><div class="btns"><button class="btn del" data-act="delitem">Verwijderen</button><button class="btn" data-act="saveitem">Opslaan</button></div>');
+  openSheet('<h3>Item bewerken</h3><label for="eN">Naam</label><input type="text" id="eN" value="'+h(i.name)+'"><label for="eQ">Aantal (stuks)</label><div class="form qrow"><button type="button" class="qs" data-act="eqs" data-d="-1" aria-label="Minder">&minus;</button><input type="text" id="eQ" value="'+cntOf(eq(i))+'" inputmode="numeric" pattern="[0-9]*"><button type="button" class="qs" data-act="eqs" data-d="1" aria-label="Meer">+</button></div>'+'<label for="eT">Omschrijving</label><input type="text" id="eT" value="'+h(noteOf(i))+'" placeholder="bijv. 500 g, 1 liter, halfvol"><label for="eC">Afdeling</label><select id="eC">'+[...new Set([...(L().cats&&L().cats.length?L().cats:CATS),i.cat])].map(c=>'<option'+(c===i.cat?" selected":"")+'>'+h(c)+'</option>').join("")+'</select><label for="eL">Lijst</label><select id="eL">'+lists().map(x=>'<option value="'+h(x.id)+'"'+(x.id===i.list?" selected":"")+'>'+h(x.name)+'</option>').join("")+'</select><label>Foto van het product</label><div id="ePh">'+(i.photo&&String(i.photo).startsWith("data:image/")?'<img class="photo" alt="Productfoto" src="'+h(i.photo)+'">':'')+'</div><div class="btns" style="margin-top:8px"><button class="btn sec" data-act="photo">'+(i.photo?"Andere foto":"Foto toevoegen")+'</button>'+(i.photo?'<button class="btn sec" data-act="nophoto">Foto weg</button>':'')+'</div><label><input type="checkbox" id="eS"'+(isStaple?" checked":"")+'> Vast item op deze lijst</label><div class="btns"><button class="btn del" data-act="delitem">Verwijderen</button><button class="btn" data-act="saveitem">Opslaan</button></div>');
 }
-const UCHIPS=[["","stuks"],["g","gram"],["kg","kilo"],["l","liter"],["ml","ml"],["pak","pak"],["zak","zak"],["fles","fles"]];
-function syncU(){const p=pq($("#eQ").value);document.querySelectorAll("#eU .chip").forEach(c=>{const on=!!p&&c.dataset.u===p.u;c.setAttribute("aria-pressed",on);c.classList.toggle("on",on)})}
+function syncU(){}
 function saveItem(){
   const i=S.items[editId];if(!i)return closeSheet();
   const n=$("#eN").value.trim()||i.name,cat=$("#eC").value;
-  const d={...clean(i),name:n,qty:(p=>p?fq(p):$("#eQ").value.trim())(pq($("#eQ").value)),note:$("#eT").value.trim(),cat,list:$("#eL").value};
+  const cnt=Math.max(1,parseInt($("#eQ").value,10)||1);
+  const d={...clean(i),name:n,qty:cnt>1?String(cnt):"",note:$("#eT").value.trim(),cat,list:$("#eL").value};
   if(pendingPhoto!==undefined){if(pendingPhoto)d.photo=pendingPhoto;else delete d.photo}
   if(JSON.stringify(d)!==JSON.stringify(i))put("items/"+editId,d);
-  const k=key(n),kn=S.known[k];const pp=pq(d.qty);const dq=pp&&isMeasure(pp.u)?fq(pp):(kn&&kn.dq&&pp?"":(kn&&kn.dq));
-  if(!kn||kn.cat!==cat||(kn.dq||"")!==(dq||""))put("known/"+k,{...(kn||{}),name:n,cat,n:(kn&&kn.n)||1,last:Date.now(),dq:dq||""});
+  const k=key(n),kn=S.known[k];const dn=reMeasStart.test(d.note)?measOf(d.note):"";
+  if(!kn||kn.cat!==cat||(kn.dn||"")!==dn){const nk={...(kn||{}),name:n,cat,n:(kn&&kn.n)||1,last:Date.now(),dn};delete nk.dq;put("known/"+k,nk)}
   const l=L(),st=(l.staples||[]).filter(s=>norm(s.n)!==norm(n));const was=(l.staples||[]).length!==st.length;
   if($("#eS").checked&&!was)put("lists/"+cur,{...l,staples:[...st,{n,c:cat}]});
   else if(!$("#eS").checked&&was)put("lists/"+cur,{...l,staples:st});
@@ -576,10 +575,7 @@ document.addEventListener("click",e=>{
     toast(mine?"Fijn, alles binnen!":"Je gezin ziet nu dat je in de winkel bent")}
   else if(a==="stt"){const on=b.getAttribute("aria-pressed")!=="true";b.setAttribute("aria-pressed",on);b.classList.toggle("on",on)}
   else if(a==="addst"){const n=$("#stN").value.trim();if(!n)return;const l=L();const {name}=parse(n);if(!(l.staples||[]).some(s=>norm(s.n)===norm(name)))put("lists/"+cur,{...l,staples:[...(l.staples||[]),{n:name,c:guessCat(name)}]});staplesSheet()}
-  else if(a==="eqs"){const p=pq($("#eQ").value)||{n:1,u:""};const st=stepOf(p.u),nn=+(p.n+(+b.dataset.d)*st).toFixed(3);if(nn<minOf(p.u)-1e-9)return;$("#eQ").value=fq({n:nn,u:p.u})||"1";syncU()}
-  else if(a==="equ"){const p=pq($("#eQ").value)||{n:1,u:""};const u=b.dataset.u;let n=p.n;
-    if(p.u===u)return;if(p.u==="g"&&u==="kg")n=p.n/1000;else if(p.u==="kg"&&u==="g")n=p.n*1000;else if(p.u==="ml"&&u==="l")n=p.n/1000;else if(p.u==="l"&&u==="ml")n=p.n*1000;else if(isMeasure(u))n=UNITS[u].def;else if(isMeasure(p.u))n=1;
-    $("#eQ").value=fq({n:+n.toFixed(3),u})||"1";syncU()}
+  else if(a==="eqs"){const n=Math.max(1,(parseInt($("#eQ").value,10)||1)+(+b.dataset.d));$("#eQ").value=n}
   else if(a==="newhh")startHH(newCode());
   else if(a==="joinhh"){const v=$("#hc").value.trim().toLowerCase();const m=v.match(/gezin=([a-z0-9]{8,32})/)||v.match(/^([a-z0-9]{8,32})$/);if(!m){$("#hcErr").textContent="Dat lijkt geen geldige code of link.";return}startHH(m[1])}
   else if(a==="sharelink"){const url=shareLink();if(navigator.share)navigator.share({title:"Onze boodschappenlijst",text:"Doe mee met onze gedeelde boodschappenlijst:",url}).catch(()=>{});else{navigator.clipboard&&navigator.clipboard.writeText(url).then(()=>toast("Link gekopieerd")).catch(()=>{$("#shl").select()})}}
